@@ -10,12 +10,15 @@ import { InputNumber } from "primereact/inputnumber";
 import { Dropdown } from "primereact/dropdown";
 import { Checkbox, type CheckboxChangeEvent } from "primereact/checkbox";
 
+
 type Artwork = {
   id: number;
   title?: string;
   artist_display?: string;
   place_of_origin?: string;
+  inscriptions?: string;
   date_start?: number;
+  date_end?: number;
   image_id?: string | null;
 };
 
@@ -149,18 +152,18 @@ export default function ArtworksTable() {
     setShowClearDialog(false);
   }
 
-  async function fetchPageData(p: number): Promise<Artwork[]> {
+  async function loadArtData(p: number): Promise<Artwork[]> {
     try {
       const params = { page: p, limit: rowsPerPage };
       const resp = await axios.get<ApiResponse>("https://api.artic.edu/api/v1/artworks", { params });
       return resp.data.data || [];
     } catch (err) {
-      console.warn("fetchPageData failed for", p, err);
+      console.warn("loadArtData failed for", p, err);
       return [];
     }
   }
 
-  async function applyAutoSelect() {
+  async function handleAutoSelect() {
     const n = selectNumber ?? 0;
     if (n <= 0) {
       overlayRef.current?.hide?.();
@@ -175,7 +178,7 @@ export default function ArtworksTable() {
       let nextPage = page + 1;
 
       while (combined.length < n && nextPage <= totalPages) {
-        const more = await fetchPageData(nextPage);
+        const more = await loadArtData(nextPage);
         combined.push(...more);
         nextPage += 1;
       }
@@ -318,7 +321,7 @@ export default function ArtworksTable() {
                   />
                   <Button
                     label={selectingLoading ? "Selecting..." : "Apply"}
-                    onClick={applyAutoSelect}
+                    onClick={handleAutoSelect}
                     disabled={selectingLoading}
                   />
                 </div>
@@ -355,7 +358,11 @@ export default function ArtworksTable() {
             <Column field="title" header="Title" body={titleBody} />
             <Column field="artist_display" header="Artist" body={artistBody} />
             <Column field="place_of_origin" header="Origin" body={originBody} />
+            <Column field="inscriptions" header="Inscriptions" body={(row) => (
+              <span title={row.inscriptions}>
+               {row.inscriptions ? row.inscriptions.slice(0, 50) + (row.inscriptions.length > 50 ? "…" : "") : "-"}</span>)}/>
             <Column field="date_start" header="Date" body={dateBody} style={{ width: "110px" }} />
+            <Column field="date_end" header="Date End" body={(row: Artwork) => <span>{row.date_end ?? "-"}</span>} />
           </DataTable>
         </div>
 
